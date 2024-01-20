@@ -1,0 +1,182 @@
+<html>
+
+<head>
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+     crossorigin="anonymous">
+    <!-- ROS stuff -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/eventemitter2/lib/eventemitter2.min.js">
+
+    </script>
+    <script type="text/javascript" src="https://s3.eu-west-1.amazonaws.com/rosject.io/js/roslib.min.js">
+
+    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/easeljs/lib/easeljs.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ros2d/build/ros2d.min.js"></script>
+    <script src="./libs/three.min.js"></script>
+    <script src="./libs/ColladaLoader.js"></script>
+    <script src="./libs/ColladaLoader2.js"></script>
+    <script src="./libs/STLLoader.js"></script>
+    <script src="./libs/ros3d.min.js"></script>
+    <script type="text/javascript" src="mjpegcanvas.min.js">
+	</script>
+    
+    <!-- Vuejs -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js">
+
+    </script>
+    <style type="text/css">
+		#dragstartzone {
+			position: relative;
+			display: inline-block;
+			width: 200px;
+			height: 200px;
+			border: 1px solid #333;
+			border-radius: 50%;
+			z-index: 10;
+			-moz-user-select: -moz-none;
+			-khtml-user-select: none;
+			-webkit-user-select: none;
+		}
+
+		#dragCircle {
+			position: absolute;
+			z-index: 9;
+			border: 1px solid transparent;
+			border-radius: 50%;
+			background-color: rgba(0, 0, 0, 30%);
+			-moz-user-select: -moz-none;
+			-khtml-user-select: none;
+			-webkit-user-select: none;
+		}
+
+		#dragCircle:hover {
+			background-color: lightcoral;
+		}
+	</style>
+</head>
+
+<body>
+    <div id="app" class="container-fluid">
+        <div class="row">
+            <div class="col-3 text-center">
+                <div class="card mt-2">
+                    <div class="card-body">
+                        <h3>Connection status</h3>
+                        <p class="text-danger" v-if="!connected">Not connected!</p>
+                        <p class="text-success" v-if="connected">Connected!</p>
+                        <label>ROSBridge address</label>
+                        <br>
+                        <input type="text" v-model="rosbridge_address" />
+                        <br><br>
+                        <button :disabled="loading" class="btn btn-danger" @click="disconnect"
+                            v-if="connected">Disconnect!</button>
+                        <button :disabled="loading" class="btn btn-success" @click="connect" v-else>Connect!</button>
+                    </div>
+                </div>
+                <div class="card mt-2">
+                    <div class="card-header d-flex align-items-center justify-content-center">
+                        <h4>Logs</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <p v-for="log in logs">{{ log }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-9">
+                <h3>Controls</h3>
+                <div class="row">
+                    <div class="col-4">
+                        <div class="card mt-2">
+                            <div class="card-header d-flex align-items-center justify-content-center">
+                                <h4>Robot model</h4>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <div id="div3DViewer"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <div class="card mt-2">
+                            <div class="card-header d-flex align-items-center justify-content-center">
+                                <h4>Generated Map</h4>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <div id="map"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-4">
+                        <div class="card mt-2">
+                            <div class="card-header d-flex align-items-center justify-content-center">
+                                <h4>Camera</h4>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <div id="divCamera"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card mt-2">
+                            <div class="card-header d-flex align-items-center justify-content-center">
+                                <h4>Joystick</h4>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag">
+                                </div>
+                                <div id="dragCircle" :style="dragCircleStyle"></div>
+                            </div>
+                            <div class="card-header d-flex align-items-center justify-content-center">
+                                <h4>Joystick Values</h4>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <p>Vertical: {{ joystick.vertical.toFixed(3) }}</p>
+                                <br />
+                                <p>Horizontal: {{ joystick.horizontal.toFixed(3) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card mt-2">
+                            <div class="card-header text-center">
+                                <div></div>
+                                    <h4>Waypoint</h4>
+                                    <br>
+                                    <p>Please click the waypoints in order to create the full map. Also wait for the robot to reach the clicked waypoint before clicking the next one.</p>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div v-for="(waypoint, index) in waypoints" :key="index">
+                                    <button
+                                        :class="{ 'btn-success': clickedWaypointIndex === index }"
+                                        :disabled="!connected || action.status.status == 1 || index > currentWaypointIndex"
+                                        @click="sendGoal(waypoint, index)"
+                                    >
+                                        Waypoint {{ index + 1 }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // We could have loaded main.js simply with:
+        //  <script type="text/javascript" src="main.js">
+        //
+        // BUT we were having caching-related problems.
+        // Loading main.js with a Date.now() in the URL we avoid using cache
+
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'main.js?v=11.' + Date.now();
+        document.head.appendChild(script);
+    </script>
+</body>
+
+</html>
