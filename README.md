@@ -10,19 +10,11 @@ This project implements a comprehensive web interface for controlling and monito
 
 ### Web Interface Control
 <p align="center">
-  <img src="https://i.imgflip.com/[demo1].gif" alt="Web Interface Demo">
+  <img src="https://i.imgflip.com/a4f60y.gif" alt="Web Interface Demo" width="500" height="500">
 </p>
 
-*Real-time control interface showing joystick control, camera feed, and 3D robot visualization*
-
-### Autonomous Navigation
-<p align="center">
-  <img src="https://i.imgflip.com/[demo2].gif" alt="Autonomous Navigation Demo">
-</p>
-
+*Real-time control interface showing joystick control, camera feed, and 3D robot visualization. By providing waypoints through the web browser, you can easily perform full SLAM mapping without manual teleoperation, eliminating the hassle of continuous robot control*
 *TortoiseBot executing waypoint navigation with real-time map generation and obstacle avoidance*
-
-**For complete demonstration**: [Watch Full Video Demo] - Complete walkthrough of web interface features and robot capabilities
 
 ## Key Features
 
